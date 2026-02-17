@@ -30,7 +30,8 @@ const ro = {
     loading: "Se încarcă...",
     error: "A apărut o eroare.",
     retry: "Reîncearcă",
-    required: "Acest câmp este obligatoriu."
+    required: "Acest câmp este obligatoriu.",
+    ready: "Gata"
   },
   scan: {
     title: "Scanează un produs",
@@ -40,7 +41,8 @@ const ro = {
     enableCamera: "Permite acces la cameră",
     analyze: "Analizează",
     result: "Rezultat",
-    tapIngredient: "Atinge un ingredient pentru detalii"
+    tapIngredient: "Atinge un ingredient pentru detalii",
+    ingredients: "Ingrediente găsite"
   },
   ingredientDetail: {
     title: "Ingredient",

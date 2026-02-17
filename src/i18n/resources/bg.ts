@@ -30,7 +30,8 @@ const bg = {
     loading: "Зареждане...",
     error: "Възникна грешка.",
     retry: "Опитай отново",
-    required: "Полето е задължително."
+    required: "Полето е задължително.",
+    ready: "Готово"
   },
   scan: {
     title: "Сканирай продукт",
@@ -40,7 +41,8 @@ const bg = {
     enableCamera: "Разреши камера",
     analyze: "Анализирай",
     result: "Резултат",
-    tapIngredient: "Докосни съставка за повече информация"
+    tapIngredient: "Докосни съставка за повече информация",
+    ingredients: "Намерени съставки"
   },
   ingredientDetail: {
     title: "Съставка",

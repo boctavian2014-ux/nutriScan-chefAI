@@ -30,7 +30,8 @@ const en = {
     loading: "Loading...",
     error: "Something went wrong.",
     retry: "Retry",
-    required: "This field is required."
+    required: "This field is required.",
+    ready: "Ready"
   },
   scan: {
     title: "Scan a product",
@@ -40,7 +41,8 @@ const en = {
     enableCamera: "Enable camera",
     analyze: "Analyze",
     result: "Result",
-    tapIngredient: "Tap an ingredient to learn more"
+    tapIngredient: "Tap an ingredient to learn more",
+    ingredients: "Ingredients found"
   },
   ingredientDetail: {
     title: "Ingredient",
