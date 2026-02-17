@@ -24,8 +24,8 @@ import type { ScanStackParamList } from "../../navigation/types";
 import type { Scan, User } from "../../types/domain";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const SCAN_BUTTON_OUTER = 80;
-const SCAN_BUTTON_INNER = 56;
+const SCAN_BUTTON_OUTER = 70;
+const SCAN_BUTTON_INNER = 50;
 const SCAN_BAR_DURATION = 2600;
 const SCAN_BAR_RANGE = SCREEN_HEIGHT - 140;
 
@@ -141,12 +141,13 @@ const ScanScreen = ({ navigation }: Props) => {
     return (
       <ScreenLayout>
         <View style={[styles.inner, styles.center]}>
-          <Text style={styles.title}>{t("scan.title")}</Text>
-          <Text style={[styles.muted, { marginBottom: 24 }]}>
+          <Text style={styles.permissionEmoji}>📷</Text>
+          <Text style={styles.permissionTitle}>{t("scan.enableCamera")}</Text>
+          <Text style={[styles.permissionDesc, { marginBottom: 24 }]}>
             {t("common.loading")}
           </Text>
           <TouchableOpacity
-            style={[styles.enableCameraButton]}
+            style={styles.enableCameraButton}
             onPress={requestPermission}
           >
             <Text style={styles.buttonText}>{t("scan.enableCamera")}</Text>
@@ -164,8 +165,9 @@ const ScanScreen = ({ navigation }: Props) => {
             <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           ) : (
             <View style={styles.cameraPlaceholder}>
+              <Text style={styles.cameraPlaceholderEmoji}>📷</Text>
               <Text style={styles.cameraPlaceholderText}>
-                {t("scan.upload")}
+                {t("common.loading")}
               </Text>
             </View>
           )}
@@ -187,21 +189,25 @@ const ScanScreen = ({ navigation }: Props) => {
           />
         </View>
 
-        <View style={styles.overlayTop} pointerEvents="box-none">
-          <Text style={styles.title}>{t("scan.title")}</Text>
-          <TouchableOpacity
-            style={styles.uploadCta}
-            onPress={onPickImage}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.uploadCtaText}>{t("scan.upload")}</Text>
-          </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.headerOverlay} pointerEvents="box-none">
+          <View>
+            <Text style={styles.headerTitle}>{t("scan.title")}</Text>
+            <Text style={styles.headerSubtitle}>ZEST AI Smart Scanning</Text>
+          </View>
+          {imageUri && (
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>✓ {t("common.ready")}</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.overlayBottom} pointerEvents="box-none">
-          <View style={styles.scanButtonRow}>
+        {/* Bottom Controls */}
+        <View style={styles.controlsOverlay} pointerEvents="box-none">
+          {/* Floating Action Button - Main Capture */}
+          <View style={styles.fabContainer}>
             <TouchableOpacity
-              style={styles.scanButtonWrap}
+              style={styles.fabMain}
               onPress={onScan}
               onPressIn={onScanPressIn}
               onPressOut={onScanPressOut}
@@ -209,37 +215,71 @@ const ScanScreen = ({ navigation }: Props) => {
             >
               <Animated.View
                 style={[
-                  styles.scanButton,
+                  styles.fabInner,
                   { transform: [{ scale: scanButtonScale }] }
                 ]}
               >
-                <View style={styles.scanButtonInner} />
+                <Text style={styles.fabIcon}>📸</Text>
               </Animated.View>
             </TouchableOpacity>
-            <Text style={styles.scanButtonLabel}>{t("scan.scanButton")}</Text>
+
+            {/* Quick Gallery Button */}
+            <TouchableOpacity style={styles.fabAlt} onPress={onPickImage}>
+              <Text style={styles.fabAltIcon}>🖼️</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.analyzeButton,
-              (!imageUri || mutation.isPending) && styles.analyzeButtonDisabled
-            ]}
-            onPress={onAnalyze}
-            disabled={!imageUri || mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <ActivityIndicator color={colors.text} />
-            ) : (
-              <Text style={styles.buttonText}>{t("scan.analyze")}</Text>
-            )}
-          </TouchableOpacity>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          {/* Analyze Panel */}
+          {imageUri && (
+            <View style={styles.analyzePanel}>
+              <Text style={styles.panelLabel}>{t("scan.analyze")}</Text>
+              <TouchableOpacity
+                style={[
+                  styles.analyzeButtonPremium,
+                  mutation.isPending && styles.analyzeButtonPremiumDisabled
+                ]}
+                onPress={onAnalyze}
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.analyzeButtonIcon}>✨</Text>
+                    <Text style={styles.analyzeButtonText}>{t("scan.analyze")}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Error State */}
+          {error ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          ) : null}
         </View>
 
+        {/* Results Overlay */}
         {scan && ingredients.length > 0 ? (
           <View style={styles.resultOverlay} pointerEvents="box-none">
             <View style={[styles.resultSquare, { width: resultBoxSize }]}>
-              <Text style={styles.resultTitle}>{t("scan.result")}</Text>
-              <Text style={styles.tapHint}>{t("scan.tapIngredient")}</Text>
+              <View style={styles.resultHeader}>
+                <Text style={styles.resultTitle}>
+                  ✨ {ingredients.length} {t("scan.ingredients")}
+                </Text>
+                <TouchableOpacity
+                  style={styles.resultCloseBtn}
+                  onPress={() => {
+                    setScan(null);
+                    setImageUri(null);
+                  }}
+                >
+                  <Text style={styles.resultCloseBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
               <ScrollView
                 style={styles.ingredientList}
                 contentContainerStyle={styles.ingredientListContent}
@@ -254,6 +294,7 @@ const ScanScreen = ({ navigation }: Props) => {
                     }
                     activeOpacity={0.7}
                   >
+                    <Text style={styles.ingredientChipEmoji}>🏷️</Text>
                     <Text style={styles.ingredientChipText} numberOfLines={1}>
                       {ingredient}
                     </Text>
@@ -282,25 +323,37 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 24
   },
-  title: {
-    fontSize: 22,
+  permissionEmoji: {
+    fontSize: 64,
+    marginBottom: 20
+  },
+  permissionTitle: {
+    fontSize: 24,
     fontWeight: "700",
-    marginBottom: 8,
-    color: colors.text
-  },
-  uploadCta: {
-    alignSelf: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: colors.glassStrong,
-    borderWidth: 1,
-    borderColor: colors.glassBorder
-  },
-  uploadCtaText: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "600"
+    marginBottom: 8
+  },
+  permissionDesc: {
+    fontSize: 15,
+    color: colors.muted,
+    textAlign: "center",
+    paddingHorizontal: 20
+  },
+  enableCameraButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8
+  },
+  buttonText: {
+    color: colors.textDark,
+    fontWeight: "700",
+    fontSize: 16
   },
   cameraWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -310,30 +363,20 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1
   },
-  overlayTop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 12
-  },
-  overlayBottom: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingBottom: 24
-  },
-  resultOverlay: {
-    position: "absolute",
-    bottom: 100,
-    left: 0,
-    right: 0,
+  cameraPlaceholder: {
+    flex: 1,
     alignItems: "center",
-    justifyContent: "flex-end"
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)"
+  },
+  cameraPlaceholderEmoji: {
+    fontSize: 56,
+    marginBottom: 12
+  },
+  cameraPlaceholderText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    textAlign: "center"
   },
   scanBar: {
     position: "absolute",
@@ -348,104 +391,193 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4
   },
-  cameraPlaceholder: {
-    flex: 1,
-    alignItems: "center",
+  headerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start"
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 2
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.7)"
+  },
+  statusBadge: {
+    backgroundColor: "rgba(107, 203, 119, 0.9)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)"
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  controlsOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 20
+  },
+  fabContainer: {
+    flexDirection: "row",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.4)"
+    alignItems: "flex-end",
+    gap: 16,
+    marginBottom: 16
   },
-  cameraPlaceholderText: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: "center",
-    paddingHorizontal: 20
+  fabMain: {
+    width: SCAN_BUTTON_OUTER,
+    height: SCAN_BUTTON_OUTER,
+    justifyContent: "center",
+    alignItems: "center"
   },
-  scanButtonRow: {
-    alignItems: "center",
-    marginBottom: 10
-  },
-  scanButtonWrap: {
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  scanButton: {
+  fabInner: {
     width: SCAN_BUTTON_OUTER,
     height: SCAN_BUTTON_OUTER,
     borderRadius: SCAN_BUTTON_OUTER / 2,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderWidth: 4,
-    borderColor: "rgba(255,255,255,0.9)",
-    alignItems: "center",
+    backgroundColor: colors.primary,
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 8
+    alignItems: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 12
   },
-  scanButtonInner: {
-    width: SCAN_BUTTON_INNER,
-    height: SCAN_BUTTON_INNER,
-    borderRadius: SCAN_BUTTON_INNER / 2,
-    backgroundColor: "#fff"
+  fabIcon: {
+    fontSize: 32
   },
-  scanButtonLabel: {
-    color: "rgba(255,255,255,0.9)",
+  fabAlt: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.4)"
+  },
+  fabAltIcon: {
+    fontSize: 24
+  },
+  analyzePanel: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    marginBottom: 8
+  },
+  panelLabel: {
+    color: "rgba(255,255,255,0.8)",
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 6,
-    letterSpacing: 0.5
+    marginBottom: 8,
+    textAlign: "center"
   },
-  analyzeButton: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.5)",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+  analyzeButtonPremium: {
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 6
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8
   },
-  analyzeButtonDisabled: {
+  analyzeButtonPremiumDisabled: {
     opacity: 0.6
   },
-  buttonText: {
-    color: colors.text,
+  analyzeButtonIcon: {
+    fontSize: 18
+  },
+  analyzeButtonText: {
+    color: colors.textDark,
     fontWeight: "700",
-    fontSize: 16
+    fontSize: 15
   },
-  enableCameraButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 999,
-    alignItems: "center"
+  errorBanner: {
+    backgroundColor: "rgba(248, 113, 113, 0.2)",
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "rgba(248, 113, 113, 0.4)"
   },
-  errorText: {
-    color: colors.danger,
-    marginTop: 8,
-    marginBottom: 8,
-    fontSize: 14
+  errorIcon: {
+    fontSize: 18
+  },
+  errorBannerText: {
+    color: "rgba(248, 113, 113, 0.9)",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1
+  },
+  resultOverlay: {
+    position: "absolute",
+    bottom: 120,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "flex-end"
   },
   resultSquare: {
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: colors.glassStrong,
+    backgroundColor: colors.glass,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     padding: 16,
     maxHeight: SCREEN_HEIGHT * 0.45
   },
-  resultTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 4
+  resultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(26,26,26,0.1)"
   },
-  tapHint: {
-    fontSize: 12,
-    color: colors.muted,
-    marginBottom: 12
+  resultTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.text
+  },
+  resultCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(248, 113, 113, 0.1)",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  resultCloseBtnText: {
+    color: colors.danger,
+    fontSize: 16,
+    fontWeight: "700"
   },
   ingredientList: {
     maxHeight: 220
@@ -454,18 +586,25 @@ const styles = StyleSheet.create({
     paddingBottom: 8
   },
   ingredientChip: {
-    backgroundColor: colors.glass,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
-    marginBottom: 8
+    borderColor: "rgba(255, 217, 61, 0.2)",
+    marginBottom: 8,
+    gap: 8
+  },
+  ingredientChipEmoji: {
+    fontSize: 16
   },
   ingredientChipText: {
     color: colors.text,
-    fontSize: 15,
-    fontWeight: "500"
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1
   },
   muted: {
     color: colors.muted
