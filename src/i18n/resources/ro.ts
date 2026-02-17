@@ -42,7 +42,13 @@ const ro = {
     analyze: "Analizează",
     result: "Rezultat",
     tapIngredient: "Atinge un ingredient pentru detalii",
-    ingredients: "Ingrediente găsite"
+    ingredients: "Ingrediente găsite",
+    barcodeMode: "Cod Bare",
+    imageMode: "Fotografie",
+    scanningBarcode: "Se scanează codul de bare...",
+    productDetails: "Detalii Produs",
+    nutritionFacts: "Informații Nutritive",
+    allergens: "Alergenici"
   },
   ingredientDetail: {
     title: "Ingredient",
@@ -55,8 +61,18 @@ const ro = {
   },
   chef: {
     title: "Chef AI",
-    placeholder: "Introdu ingrediente separate prin virgulă",
-    generate: "Generează rețetă"
+    subtitle: "Creează rețete din ingredientele tale",
+    placeholder: "de ex., morcovi, pui, orez",
+    generate: "✨ Generează Rețetă",
+    quickAdd: "Adaugă Rapid",
+    errorNoUser: "Utilizator nu găsit. Te rog conectează-te.",
+    errorNoIngredients: "Te rog adaugă cel puțin un ingredient.",
+    tryAgain: "Încearcă Din Nou",
+    ingredients: "🥘 Ingrediente",
+    steps: "👨‍🍳 Pași",
+    newRecipe: "🔄 Creează O Altă Rețetă",
+    emptyTitle: "Gata De Gătit?",
+    emptySubtitle: "Adaugă ingredientele tale mai sus și lasă Chef AI să creeze o rețetă delicioasă pentru tine"
   },
   profile: {
     title: "Profil",

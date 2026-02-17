@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { BarCodeScanner, type BarCodeScannedCallback } from "expo-barcode-scanner";
 import * as ImagePicker from "expo-image-picker";
 import { useMutation } from "@tanstack/react-query";
 import { createScanWithImage } from "../../api/scans";
@@ -32,7 +33,7 @@ const SCAN_BAR_RANGE = SCREEN_HEIGHT - 140;
 type Props = NativeStackScreenProps<ScanStackParamList, "ScanMain">;
 
 const ScanScreen = ({ navigation }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -40,6 +41,9 @@ const ScanScreen = ({ navigation }: Props) => {
   const [user, setUser] = useState<User | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"image" | "barcode">("image");
+  const [barcodeScanned, setBarcodeScanned] = useState(false);
+  const [recognizedProduct, setRecognizedProduct] = useState<any>(null);
   const scanBarAnim = useRef(new Animated.Value(0)).current;
   const scanButtonScale = useRef(new Animated.Value(1)).current;
 
@@ -88,6 +92,28 @@ const ScanScreen = ({ navigation }: Props) => {
     }
   });
 
+  const barcodeMutation = useMutation({
+    mutationFn: ({ barcode }: { barcode: string }) =>
+      fetch(`http://192.168.1.101:4000/api/scans/recognize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          barcode,
+          language: i18n.language,
+          userId: user?.id,
+        }),
+      }).then((r) => r.json()),
+    onSuccess: (data) => {
+      setRecognizedProduct(data.product);
+      setError(null);
+      setBarcodeScanned(false);
+    },
+    onError: (err) => {
+      setError(err instanceof Error ? err.message : t("common.error"));
+      setBarcodeScanned(false);
+    }
+  });
+
   const onScan = async () => {
     if (!cameraRef.current) return;
     setError(null);
@@ -130,6 +156,12 @@ const ScanScreen = ({ navigation }: Props) => {
     }
   };
 
+  const onBarcodeScanned: BarCodeScannedCallback = ({ data }) => {
+    if (barcodeScanned) return;
+    setBarcodeScanned(true);
+    barcodeMutation.mutate({ barcode: data });
+  };
+
   const onAnalyze = () => {
     if (!user?.id || !imageUri) return;
     mutation.mutate({ userId: user.id, uri: imageUri });
@@ -162,7 +194,14 @@ const ScanScreen = ({ navigation }: Props) => {
       <View style={styles.fullScanContainer}>
         <View style={styles.cameraWrapper}>
           {cameraReady && Platform.OS !== "web" ? (
-            <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+            mode === "barcode" ? (
+              <BarCodeScanner
+                onBarCodeScanned={onBarcodeScanned}
+                style={StyleSheet.absoluteFillObject}
+              />
+            ) : (
+              <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+            )
           ) : (
             <View style={styles.cameraPlaceholder}>
               <Text style={styles.cameraPlaceholderEmoji}>📷</Text>
@@ -171,22 +210,50 @@ const ScanScreen = ({ navigation }: Props) => {
               </Text>
             </View>
           )}
-          <Animated.View
-            style={[
-              styles.scanBar,
-              {
-                transform: [
-                  {
-                    translateY: scanBarAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, SCAN_BAR_RANGE]
-                    })
-                  }
-                ]
-              }
-            ]}
-            pointerEvents="none"
-          />
+          {mode === "image" && (
+            <Animated.View
+              style={[
+                styles.scanBar,
+                {
+                  transform: [
+                    {
+                      translateY: scanBarAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, SCAN_BAR_RANGE]
+                      })
+                    }
+                  ]
+                }
+              ]}
+              pointerEvents="none"
+            />
+          )}
+        </View>
+
+        {/* Mode Toggle Buttons */}
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity
+            style={[styles.modeButton, mode === "image" && styles.modeButtonActive]}
+            onPress={() => {
+              setMode("image");
+              setBarcodeScanned(false);
+              setRecognizedProduct(null);
+            }}
+          >
+            <Text style={styles.modeButtonIcon}>📸</Text>
+            <Text style={styles.modeButtonText}>Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.modeButton, mode === "barcode" && styles.modeButtonActive]}
+            onPress={() => {
+              setMode("barcode");
+              setBarcodeScanned(false);
+            }}
+          >
+            <Text style={styles.modeButtonIcon}>📊</Text>
+            <Text style={styles.modeButtonText}>Barcode</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Header */}
@@ -195,7 +262,7 @@ const ScanScreen = ({ navigation }: Props) => {
             <Text style={styles.headerTitle}>{t("scan.title")}</Text>
             <Text style={styles.headerSubtitle}>ZEST AI Smart Scanning</Text>
           </View>
-          {imageUri && (
+          {(imageUri || recognizedProduct) && (
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>✓ {t("common.ready")}</Text>
             </View>
@@ -204,33 +271,43 @@ const ScanScreen = ({ navigation }: Props) => {
 
         {/* Bottom Controls */}
         <View style={styles.controlsOverlay} pointerEvents="box-none">
-          {/* Floating Action Button - Main Capture */}
-          <View style={styles.fabContainer}>
-            <TouchableOpacity
-              style={styles.fabMain}
-              onPress={onScan}
-              onPressIn={onScanPressIn}
-              onPressOut={onScanPressOut}
-              activeOpacity={1}
-            >
-              <Animated.View
-                style={[
-                  styles.fabInner,
-                  { transform: [{ scale: scanButtonScale }] }
-                ]}
+          {/* Floating Action Button - Main Capture (Image Mode Only) */}
+          {mode === "image" && (
+            <View style={styles.fabContainer}>
+              <TouchableOpacity
+                style={styles.fabMain}
+                onPress={onScan}
+                onPressIn={onScanPressIn}
+                onPressOut={onScanPressOut}
+                activeOpacity={1}
               >
-                <Text style={styles.fabIcon}>📸</Text>
-              </Animated.View>
-            </TouchableOpacity>
+                <Animated.View
+                  style={[
+                    styles.fabInner,
+                    { transform: [{ scale: scanButtonScale }] }
+                  ]}
+                >
+                  <Text style={styles.fabIcon}>📸</Text>
+                </Animated.View>
+              </TouchableOpacity>
 
-            {/* Quick Gallery Button */}
-            <TouchableOpacity style={styles.fabAlt} onPress={onPickImage}>
-              <Text style={styles.fabAltIcon}>🖼️</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Quick Gallery Button */}
+              <TouchableOpacity style={styles.fabAlt} onPress={onPickImage}>
+                <Text style={styles.fabAltIcon}>🖼️</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          {/* Analyze Panel */}
-          {imageUri && (
+          {/* Barcode Scanning Status */}
+          {mode === "barcode" && barcodeScanned && (
+            <View style={styles.barcodeStatus}>
+              <ActivityIndicator color={colors.primary} size="large" />
+              <Text style={styles.barcodeStatusText}>Scanning barcode...</Text>
+            </View>
+          )}
+
+          {/* Analyze Panel (Image Mode) */}
+          {mode === "image" && imageUri && (
             <View style={styles.analyzePanel}>
               <Text style={styles.panelLabel}>{t("scan.analyze")}</Text>
               <TouchableOpacity
@@ -262,8 +339,8 @@ const ScanScreen = ({ navigation }: Props) => {
           ) : null}
         </View>
 
-        {/* Results Overlay */}
-        {scan && ingredients.length > 0 ? (
+        {/* Results Overlay - Image Mode */}
+        {mode === "image" && scan && ingredients.length > 0 ? (
           <View style={styles.resultOverlay} pointerEvents="box-none">
             <View style={[styles.resultSquare, { width: resultBoxSize }]}>
               <View style={styles.resultHeader}>
@@ -300,6 +377,101 @@ const ScanScreen = ({ navigation }: Props) => {
                     </Text>
                   </TouchableOpacity>
                 ))}
+              </ScrollView>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Results Overlay - Barcode Mode */}
+        {mode === "barcode" && recognizedProduct && (
+          <View style={styles.resultOverlay} pointerEvents="box-none">
+            <View style={[styles.resultSquare, { width: resultBoxSize }]}>
+              <View style={styles.resultHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resultTitle}>{recognizedProduct.name}</Text>
+                  <Text style={styles.productBrand}>Product Details</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.resultCloseBtn}
+                  onPress={() => {
+                    setRecognizedProduct(null);
+                    setBarcodeScanned(false);
+                  }}
+                >
+                  <Text style={styles.resultCloseBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                style={styles.ingredientList}
+                contentContainerStyle={styles.ingredientListContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Ingredients Section */}
+                <Text style={styles.sectionTitle}>🥘 {t("chef.ingredients")}</Text>
+                {recognizedProduct.ingredients?.map((ingredient: string, index: number) => (
+                  <TouchableOpacity
+                    key={`${ingredient}-${index}`}
+                    style={styles.ingredientChip}
+                    onPress={() =>
+                      navigation.navigate("IngredientDetail", { ingredient })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.ingredientChipEmoji}>✓</Text>
+                    <Text style={styles.ingredientChipText} numberOfLines={2}>
+                      {ingredient}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Nutrition Facts */}
+                {recognizedProduct.nutrition && (
+                  <>
+                    <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
+                      📊 Nutrition Facts
+                    </Text>
+                    <View style={styles.nutritionGrid}>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionLabel}>Energy</Text>
+                        <Text style={styles.nutritionValue}>
+                          {recognizedProduct.nutrition.energy} kcal
+                        </Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionLabel}>Fat</Text>
+                        <Text style={styles.nutritionValue}>
+                          {recognizedProduct.nutrition.fat} g
+                        </Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionLabel}>Carbs</Text>
+                        <Text style={styles.nutritionValue}>
+                          {recognizedProduct.nutrition.carbs} g
+                        </Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionLabel}>Protein</Text>
+                        <Text style={styles.nutritionValue}>
+                          {recognizedProduct.nutrition.protein} g
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                {/* Allergens/Warnings */}
+                {recognizedProduct.allergens?.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
+                      ⚠️ Allergens
+                    </Text>
+                    {recognizedProduct.allergens.map((allergen: string, index: number) => (
+                      <View key={`${allergen}-${index}`} style={styles.allergenBadge}>
+                        <Text style={styles.allergenText}>{allergen}</Text>
+                      </View>
+                    ))}
+                  </>
+                )}
               </ScrollView>
             </View>
           </View>
@@ -605,6 +777,100 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     flex: 1
+  },
+  modeToggleContainer: {
+    position: "absolute",
+    top: 100,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    gap: 12,
+    zIndex: 10
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)"
+  },
+  modeButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  modeButtonIcon: {
+    fontSize: 16
+  },
+  modeButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600"
+  },
+  barcodeStatus: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32
+  },
+  barcodeStatusText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 12
+  },
+  productBrand: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 4
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 12
+  },
+  nutritionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16
+  },
+  nutritionItem: {
+    flex: 1,
+    minWidth: "45%",
+    backgroundColor: "rgba(255,255,255,0.4)",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center"
+  },
+  nutritionLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    marginBottom: 4
+  },
+  nutritionValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700"
+  },
+  allergenBadge: {
+    backgroundColor: "rgba(248, 113, 113, 0.15)",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.danger
+  },
+  allergenText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "600"
   },
   muted: {
     color: colors.muted

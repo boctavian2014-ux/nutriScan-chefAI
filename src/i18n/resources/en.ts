@@ -42,7 +42,13 @@ const en = {
     analyze: "Analyze",
     result: "Result",
     tapIngredient: "Tap an ingredient to learn more",
-    ingredients: "Ingredients found"
+    ingredients: "Ingredients found",
+    barcodeMode: "Barcode",
+    imageMode: "Photo",
+    scanningBarcode: "Scanning barcode...",
+    productDetails: "Product Details",
+    nutritionFacts: "Nutrition Facts",
+    allergens: "Allergens"
   },
   ingredientDetail: {
     title: "Ingredient",
@@ -55,8 +61,18 @@ const en = {
   },
   chef: {
     title: "Chef AI",
-    placeholder: "Enter ingredients separated by commas",
-    generate: "Generate recipe"
+    subtitle: "Create recipes from your ingredients",
+    placeholder: "e.g., carrots, chicken, rice",
+    generate: "✨ Generate Recipe",
+    quickAdd: "Quick Add",
+    errorNoUser: "User not found. Please sign in.",
+    errorNoIngredients: "Please add at least one ingredient.",
+    tryAgain: "Try Again",
+    ingredients: "🥘 Ingredients",
+    steps: "👨‍🍳 Steps",
+    newRecipe: "🔄 Create Another Recipe",
+    emptyTitle: "Ready to Cook?",
+    emptySubtitle: "Add your ingredients above and let Chef AI create a delicious recipe for you"
   },
   profile: {
     title: "Profile",
