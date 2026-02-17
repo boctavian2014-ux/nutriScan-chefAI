@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "NutriLens",
-    "slug": "nutrilens",
+    "name": "Zest.ai",
+    "slug": "zest-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFD93D"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,12 +23,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"],
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
