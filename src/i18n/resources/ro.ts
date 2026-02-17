@@ -68,7 +68,13 @@ const ro = {
   },
   home: {
     title: "Acasă",
-    greeting: "Salut"
+    greeting: "Salut",
+    viewInsights: "Vizualizează detalii",
+    weeklyScans: "Scanări săptămânale",
+    pantryItems: "Articole din cămară",
+    riskTrend: "Tendință risc",
+    stable: "Stabil",
+    noAlerts: "Nicio avertizare de risc ridicat în această săptămână."
   }
 };
 

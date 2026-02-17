@@ -68,7 +68,13 @@ const en = {
   },
   home: {
     title: "Home",
-    greeting: "Hello"
+    greeting: "Hello",
+    viewInsights: "View insights",
+    weeklyScans: "Weekly scans",
+    pantryItems: "Pantry items",
+    riskTrend: "Risk trend",
+    stable: "Stable",
+    noAlerts: "No high-risk alerts this week."
   }
 };
 

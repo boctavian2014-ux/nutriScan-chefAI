@@ -68,7 +68,13 @@ const bg = {
   },
   home: {
     title: "Начало",
-    greeting: "Здравей"
+    greeting: "Привет",
+    viewInsights: "Преглед информация",
+    weeklyScans: "Сканиране на седмица",
+    pantryItems: "Артикули в кухней",
+    riskTrend: "Тенденция риск",
+    stable: "Стабилна",
+    noAlerts: "Няма високо рискови предупреждения тази седмица."
   }
 };
 
