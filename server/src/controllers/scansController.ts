@@ -90,9 +90,9 @@ export const createScan = async (req: Request, res: Response, next: NextFunction
         data: responseData
       });
     } catch (dbError: any) {
-      // If table doesn't exist, return mock response (for development)
-      if (dbError.code === '42P01') {
-        console.warn('⚠️  Scans table does not exist - returning mock response');
+      // If table doesn't exist or database unavailable, return mock response (for development)
+      if (dbError.code === '42P01' || dbError.code === '28P01') {
+        console.warn('⚠️  Database unavailable - returning mock response');
         
         const mockIngredients = [
           'water',
