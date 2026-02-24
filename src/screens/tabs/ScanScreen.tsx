@@ -340,7 +340,7 @@ const ScanScreen = ({ navigation }: Props) => {
         </View>
 
         {/* Results Overlay - Image Mode */}
-        {mode === "image" && scan && ingredients.length > 0 ? (
+        {mode === "image" && scan && ingredients.length > 0 && (
           <View style={styles.resultOverlay} pointerEvents="box-none">
             <View style={[styles.resultSquare, { width: resultBoxSize }]}>
               <View style={styles.resultHeader}>
@@ -380,7 +380,7 @@ const ScanScreen = ({ navigation }: Props) => {
               </ScrollView>
             </View>
           </View>
-        ) : null}
+        )}
 
         {/* Results Overlay - Barcode Mode */}
         {mode === "barcode" && recognizedProduct && (
