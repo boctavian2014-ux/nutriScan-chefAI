@@ -475,7 +475,7 @@ const ScanScreen = ({ navigation }: Props) => {
               </ScrollView>
             </View>
           </View>
-        ) : null}
+        )}
       </View>
     </ScreenLayout>
   );
