@@ -14,7 +14,13 @@ import {
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { BarCodeScanner, type BarCodeScannedCallback } from "expo-barcode-scanner";
+let BarCodeScanner: any = null;
+try {
+  const mod = require("expo-barcode-scanner");
+  BarCodeScanner = mod.BarCodeScanner;
+} catch (e) {
+  console.warn("BarCodeScanner module not available in Expo Go");
+}
 import * as ImagePicker from "expo-image-picker";
 import { useMutation } from "@tanstack/react-query";
 import { createScanWithImage } from "../../api/scans";
@@ -156,7 +162,7 @@ const ScanScreen = ({ navigation }: Props) => {
     }
   };
 
-  const onBarcodeScanned: BarCodeScannedCallback = ({ data }) => {
+  const onBarcodeScanned = ({ data }: any) => {
     if (barcodeScanned) return;
     setBarcodeScanned(true);
     barcodeMutation.mutate({ barcode: data });
@@ -195,10 +201,20 @@ const ScanScreen = ({ navigation }: Props) => {
         <View style={styles.cameraWrapper}>
           {cameraReady && Platform.OS !== "web" ? (
             mode === "barcode" ? (
-              <BarCodeScanner
-                onBarCodeScanned={onBarcodeScanned}
-                style={StyleSheet.absoluteFillObject}
-              />
+              BarCodeScanner ? (
+                <BarCodeScanner
+                  onBarCodeScanned={onBarcodeScanned}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              ) : (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderEmoji}>⚠️</Text>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Barcode scanner not available in Expo Go
+                  </Text>
+                  <Text style={styles.cameraPlaceholderText}>Use Camera mode or build with EAS</Text>
+                </View>
+              )
             ) : (
               <CameraView ref={cameraRef} style={styles.camera} facing="back" />
             )
